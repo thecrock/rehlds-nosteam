@@ -50,8 +50,9 @@ int SV_CheckKeyInfo_hook(IRehldsHook_SV_CheckKeyInfo* chain, netadr_t *adr, char
 	strncpy(cdkey, g_engfuncs.pfnInfoKeyValue(protinfo, "cdkey"), 32);
 	cdkey[33] = 0;
 
-	*pAuthProtocol = 3;
+	*pAuthProtocol = authProto;
 	*port = 27005;
+	g_CurrentAuthContext->pAuthProto = pAuthProtocol;
 
 	return 1;
 }
@@ -62,6 +63,11 @@ int SV_FinishCertificateCheck_hook(IRehldsHook_SV_FinishCertificateCheck* chain,
 		return chain->callNext(adr, nAuthProtocol, szRawCertificate, userinfo);
 	}
 
+	const char* hltv = g_engfuncs.pfnInfoKeyValue(userinfo, "*hltv");
+	if (hltv && *hltv) {
+		*g_CurrentAuthContext->pAuthProto = 2;
+	}
+	
 	return 1;
 }
 
