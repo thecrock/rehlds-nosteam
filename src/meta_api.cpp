@@ -92,6 +92,8 @@ bool Renosteam_Load() {
 		return false;
 	}
 
+	Renosteam_Players_Init();
+
 	if (!Auth_Init()) {
 		LCPrintf(true, "Auth_Init failed\n");
 	}

@@ -13,7 +13,9 @@
 
 #include "renosteam_shared.h"
 #include "mod_rehlds_api.h"
+#include "rhns_player.h"
 #include "client_auth.h"
+
 
 #include "interface.h"
 

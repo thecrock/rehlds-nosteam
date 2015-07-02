@@ -22,6 +22,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\src\public_amalgamation.cpp" />
+    <ClCompile Include="..\src\rhns_player.cpp" />
     <ClCompile Include="..\src\sdk_util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -30,6 +31,7 @@
     <ClInclude Include="..\src\osconf.h" />
     <ClInclude Include="..\src\precompiled.h" />
     <ClInclude Include="..\src\renosteam_shared.h" />
+    <ClInclude Include="..\src\rhns_player.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{853C05C8-DF80-4CE6-99C9-AED79B979CA8}</ProjectGuid>

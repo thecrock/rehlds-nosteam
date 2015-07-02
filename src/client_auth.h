@@ -7,6 +7,7 @@ struct client_auth_context_t {
 	bool nativeAuthFailed;
 	netadr_t* adr;
 	int* pAuthProto;
+	bool hltv;
 
 
 	client_auth_context_t() {
@@ -14,6 +15,7 @@ struct client_auth_context_t {
 		nativeAuthFailed = false;
 		adr = NULL;
 		pAuthProto = NULL;
+		hltv = false;
 	}
 };
 

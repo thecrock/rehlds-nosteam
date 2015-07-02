@@ -12,8 +12,16 @@ bool Renosteam_FinishClientAuth(IGameClient* cl)
 	// nosteam = bot
 	if (g_CurrentAuthContext->nativeAuthFailed) {
 		g_RehldsFuncs->SteamNotifyBotConnect(cl);
-		cl->GetNetworkUserID()->idtype = 2;
-		cl->GetNetworkUserID()->m_SteamID = 0;
+	}
+
+	CRHNSPlayer* plr = GetPlayerByClientPtr(cl);
+
+	if (g_CurrentAuthContext->hltv) {
+		plr->authenticated(CA_HLTV);
+	} else if (g_CurrentAuthContext->nativeAuthFailed) {
+		plr->authenticated(CA_NOSTEAM);
+	} else {
+		plr->authenticated(CA_STEAM);
 	}
 
 	return true;
@@ -65,7 +73,16 @@ int SV_FinishCertificateCheck_hook(IRehldsHook_SV_FinishCertificateCheck* chain,
 
 	const char* hltv = g_engfuncs.pfnInfoKeyValue(userinfo, "*hltv");
 	if (hltv && *hltv) {
-		*g_CurrentAuthContext->pAuthProto = 2;
+		*g_CurrentAuthContext->pAuthProto = 3;
+		g_CurrentAuthContext->hltv = true;
+
+		sizebuf_t* pNetMessage = g_RehldsFuncs->GetNetMessage();
+		int* pMsgReadCount = g_RehldsFuncs->GetMsgReadCount();
+
+		//avoid "invalid steam certificate length" error
+		if (*pMsgReadCount == pNetMessage->cursize) {
+			pNetMessage->cursize += 1;
+		}
 	}
 	
 	return 1;
@@ -83,6 +100,59 @@ qboolean Steam_NotifyClientConnect_hook(IRehldsHook_Steam_NotifyClientConnect* c
 	return Renosteam_FinishClientAuth(cl) ? 1 : 0;
 }
 
+void Steam_NotifyClientDisconnect_hook(IRehldsHook_Steam_NotifyClientDisconnect* chain, IGameClient* cl) {
+	chain->callNext(cl);
+	GetPlayerByClientPtr(cl)->clear();
+}
+
+char *SV_GetIDString_hook(IRehldsHook_SV_GetIDString* chain, USERID_t *id) {
+	static char idstring[64];
+
+	CRHNSPlayer* plr = GetPlayerByUserIdPtr(id);
+	if (plr) {
+		strcpy(idstring, plr->GetSteamId());
+	}
+	else {
+		uint32 accId = id->m_SteamID & 0xFFFFFFFF;
+		switch (id->idtype) {
+		case 1:
+			if (accId == 0) {
+				strcpy(idstring, "STEAM_ID_LAN");
+			}
+			else if (accId == 1) {
+				strcpy(idstring, "STEAM_ID_PENDING");
+			}
+			else {
+				sprintf(idstring, "STEAM_%u:%u:%u", 0, accId & 1, accId >> 1);
+			}
+			break;
+
+		case 2:
+			if (accId == 0) {
+				strcpy(idstring, "VALVE_ID_LAN");
+			}
+			else if (accId == 1) {
+				strcpy(idstring, "VALVE_ID_PENDING");
+			}
+			else {
+				sprintf(idstring, "VALVE_%u:%u:%u", 0, accId & 1, accId >> 1);
+			}
+			break;
+
+
+		case 3:
+			strcpy(idstring, "HLTV");
+			break;
+
+		default:
+			strcpy(idstring, "UNKNOWN");
+			break;
+		}
+	}
+
+	return idstring;
+}
+
 bool Auth_Init() {
 
 	//
@@ -92,6 +162,10 @@ bool Auth_Init() {
 	g_RehldsHookchains->SV_CheckKeyInfo()->registerHook(&SV_CheckKeyInfo_hook);
 	g_RehldsHookchains->SV_FinishCertificateCheck()->registerHook(&SV_FinishCertificateCheck_hook);
 	g_RehldsHookchains->Steam_NotifyClientConnect()->registerHook(&Steam_NotifyClientConnect_hook);
+
+	g_RehldsHookchains->SV_GetIDString()->registerHook(&SV_GetIDString_hook);
+
+	g_RehldsHookchains->Steam_NotifyClientDisconnect()->registerHook(&Steam_NotifyClientDisconnect_hook);
 
 	return true;
 }
